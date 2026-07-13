@@ -1,0 +1,34 @@
+import {Navigate,Route,Routes} from 'react-router-dom';
+import {useAuth} from './auth/AuthContext';
+import {AppLayout} from './layout/AppLayout';
+import {ClientLayout} from './layout/ClientLayout';
+import {LoginPage} from './pages/LoginPage';
+import {LandingPage} from './pages/LandingPage';
+import {TechDashboardPage} from './pages/TechDashboardPage';
+import {CompaniesPage} from './pages/CompaniesPage';
+import {ITServicesPage} from './pages/ITServicesPage';
+import {TicketsPage} from './pages/TicketsPage';
+import {ClientCreateTicketPage} from './pages/ClientCreateTicketPage';
+import {ClientTicketsPage} from './pages/ClientTicketsPage';
+import {ContactsPage} from './pages/ContactsPage';
+import {AssetsPage} from './pages/AssetsPage';
+import {ClientAssetsPage} from './pages/ClientAssetsPage';
+import {AuditPage} from './pages/AuditPage';
+import {ProjectsPage} from './pages/ProjectsPage';
+import {ContractsPage} from './pages/ContractsPage';
+import {KnowledgePage} from './pages/KnowledgePage';
+import {TimesheetPage} from './pages/TimesheetPage';
+import {ProductsPage} from './pages/ProductsPage';
+import {PurchasesPage} from './pages/PurchasesPage';
+import {SalesPage} from './pages/SalesPage';
+import {ReportsPage} from './pages/ReportsPage';
+import {DocumentsPage} from './pages/DocumentsPage';
+import {ClientDocumentsPage} from './pages/ClientDocumentsPage';
+import {DeliveryNotesPage} from './pages/DeliveryNotesPage';
+import {ClientCompanyPage} from './pages/ClientCompanyPage';
+import {ClientProjectsPage} from './pages/ClientProjectsPage';
+import {RoleRoute} from './components/RoleRoute';
+import {NotFoundPage} from './pages/NotFoundPage';
+function Guard({client=false}:{client?:boolean}){const{user,loading}=useAuth();if(loading)return <div className="grid min-h-screen place-items-center">Cargando...</div>;if(!user)return <Navigate to="/login" replace/>;if(client&&user.rol!=='CLIENTE')return <Navigate to="/" replace/>;if(!client&&user.rol==='CLIENTE')return <Navigate to="/cliente" replace/>;return client?<ClientLayout/>:<AppLayout/>}
+const roles={internal:['ADMINISTRADOR','COORDINADOR','TECNICO'] as const,manager:['ADMINISTRADOR','COORDINADOR'] as const,admin:['ADMINISTRADOR'] as const};
+export default function App(){const{user}=useAuth();return <Routes><Route path="/login" element={user?<Navigate to={user.rol==='CLIENTE'?'/cliente':'/'}/>:<LoginPage/>}/><Route path="/" element={user?<Guard/>:<LandingPage/>}>{user&&<Route index element={<TechDashboardPage/>}/>}<Route path="empresas" element={<RoleRoute roles={[...roles.internal]}><CompaniesPage/></RoleRoute>}/><Route path="contactos" element={<RoleRoute roles={[...roles.manager]}><ContactsPage/></RoleRoute>}/><Route path="servicios-ti" element={<RoleRoute roles={[...roles.internal]}><ITServicesPage/></RoleRoute>}/><Route path="tickets" element={<RoleRoute roles={[...roles.internal]}><TicketsPage/></RoleRoute>}/><Route path="mesa-ayuda" element={<RoleRoute roles={[...roles.manager]}><TicketsPage board/></RoleRoute>}/><Route path="proyectos" element={<RoleRoute roles={[...roles.internal]}><ProjectsPage/></RoleRoute>}/><Route path="contratos" element={<RoleRoute roles={[...roles.manager]}><ContractsPage/></RoleRoute>}/><Route path="timesheet" element={<RoleRoute roles={[...roles.internal]}><TimesheetPage/></RoleRoute>}/><Route path="cmdb" element={<RoleRoute roles={[...roles.internal]}><AssetsPage/></RoleRoute>}/><Route path="inventario-ti" element={<RoleRoute roles={[...roles.manager]}><ProductsPage/></RoleRoute>}/><Route path="guias-remision" element={<RoleRoute roles={[...roles.internal]}><DeliveryNotesPage/></RoleRoute>}/><Route path="documentos" element={<RoleRoute roles={[...roles.manager]}><DocumentsPage/></RoleRoute>}/><Route path="compras-ti" element={<RoleRoute roles={[...roles.admin]}><PurchasesPage/></RoleRoute>}/><Route path="facturacion" element={<RoleRoute roles={[...roles.admin]}><SalesPage/></RoleRoute>}/><Route path="conocimiento" element={<RoleRoute roles={[...roles.internal]}><KnowledgePage/></RoleRoute>}/><Route path="reportes-ti" element={<RoleRoute roles={[...roles.manager]}><ReportsPage/></RoleRoute>}/><Route path="auditoria-ti" element={<RoleRoute roles={[...roles.admin]}><AuditPage/></RoleRoute>}/></Route><Route element={<Guard client/>}><Route path="cliente" element={<TechDashboardPage/>}/><Route path="cliente/crear-ticket" element={<ClientCreateTicketPage/>}/><Route path="cliente/mis-tickets" element={<ClientTicketsPage/>}/><Route path="cliente/empresa" element={<ClientCompanyPage/>}/><Route path="cliente/proyectos" element={<ClientProjectsPage/>}/><Route path="cliente/activos" element={<ClientAssetsPage/>}/><Route path="cliente/documentos" element={<ClientDocumentsPage/>}/></Route><Route path="*" element={<NotFoundPage/>}/></Routes>}
