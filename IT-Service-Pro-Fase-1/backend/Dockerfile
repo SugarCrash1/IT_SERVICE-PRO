@@ -16,6 +16,8 @@ COPY . .
 
 RUN mkdir -p uploads
 
+RUN chmod +x runtime.sh
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["bash", "runtime.sh"]
