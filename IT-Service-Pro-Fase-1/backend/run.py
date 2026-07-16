@@ -9,6 +9,7 @@ import sys
 import uvicorn
 
 from app.core.config import settings
+from app.core.logging_config import LOGGING_CONFIG
 
 if __name__ == "__main__":
     # Ejecutar migraciones de Alembic automáticamente
@@ -49,5 +50,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=port,
+        log_config=LOGGING_CONFIG,
         reload=settings.APP_ENV == "development",
     )

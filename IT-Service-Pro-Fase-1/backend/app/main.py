@@ -4,10 +4,15 @@ Configura middlewares, CORS, manejo de excepciones y el registro de rutas.
 Fase 7: se registran autenticación, usuarios, clientes, categorías y servicios.
 """
 import logging
+import logging.config
 import subprocess
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Aplicar configuración de logging centralizada
+from app.core.logging_config import LOGGING_CONFIG
+logging.config.dictConfig(LOGGING_CONFIG)
 
 from app.api.routes.auth_routes import router as auth_router
 from app.api.routes.user_routes import router as user_router
