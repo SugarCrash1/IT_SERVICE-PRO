@@ -3,6 +3,9 @@ Punto de entrada de la aplicación FastAPI.
 Configura middlewares, CORS, manejo de excepciones y el registro de rutas.
 Fase 7: se registran autenticación, usuarios, clientes, categorías y servicios.
 """
+import logging
+import subprocess
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -31,6 +34,11 @@ from app.api.routes.document_routes import router as document_router
 from app.api.routes.delivery_routes import router as delivery_router
 from app.core.config import settings
 from app.core.error_handlers import register_exception_handlers
+from app.database.base import Base
+from app.database.session import engine
+
+# Logger para mensajes de startup
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -52,6 +60,58 @@ app.add_middleware(
 
 # Manejadores globales de excepciones
 register_exception_handlers(app)
+
+
+# ===========================================
+# Inicialización de Base de Datos
+# ===========================================
+def init_database() -> None:
+    """Inicializa la BD: intenta Alembic, fallback a SQLAlchemy create_all."""
+    logger.info("="*60)
+    logger.info("🔧 Inicializando base de datos...")
+    logger.info("="*60)
+    
+    # Paso 1: Intentar migraciones con Alembic
+    logger.info("📝 Intento 1: Ejecutando migraciones de Alembic...")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            logger.info("✅ Migraciones de Alembic completadas exitosamente.")
+            return
+        else:
+            logger.warning(f"⚠️ Alembic retornó código {result.returncode}")
+            if result.stderr:
+                logger.warning(f"Error: {result.stderr[:500]}")
+    
+    except subprocess.TimeoutExpired:
+        logger.warning("⏱️ Timeout en Alembic (>30s), continuando...")
+    except Exception as e:
+        logger.warning(f"⚠️ Error al ejecutar Alembic: {type(e).__name__}: {str(e)[:200]}")
+    
+    # Paso 2: Fallback a SQLAlchemy create_all
+    logger.info("📝 Intento 2: Creando tablas con SQLAlchemy Base.metadata.create_all()...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Tablas creadas/verificadas exitosamente con SQLAlchemy.")
+    except Exception as e:
+        logger.error(f"❌ Error al crear tablas: {type(e).__name__}: {str(e)[:200]}")
+        raise
+    
+    logger.info("="*60)
+    logger.info("🚀 Base de datos lista para operación.")
+    logger.info("="*60)
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Event handler que se ejecuta al iniciar la aplicación."""
+    init_database()
 
 
 @app.get("/", tags=["Sistema"])
