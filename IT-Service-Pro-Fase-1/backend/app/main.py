@@ -63,55 +63,59 @@ register_exception_handlers(app)
 
 
 # ===========================================
-# Inicialización de Base de Datos
+# Inicialización de Base de Datos (Module-level)
 # ===========================================
-def init_database() -> None:
-    """Inicializa la BD: intenta Alembic, fallback a SQLAlchemy create_all."""
-    logger.info("="*60)
-    logger.info("🔧 Inicializando base de datos...")
-    logger.info("="*60)
+def _init_database_sync() -> None:
+    """Inicializa la BD al nivel del módulo (antes de Uvicorn)."""
+    print("\n" + "="*70, flush=True)
+    print("🔧 INICIALIZANDO BASE DE DATOS...", flush=True)
+    print("="*70, flush=True)
     
     # Paso 1: Intentar migraciones con Alembic
-    logger.info("📝 Intento 1: Ejecutando migraciones de Alembic...")
+    print("\n📝 Intento 1: Ejecutando migraciones de Alembic...", flush=True)
     try:
         result = subprocess.run(
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60
         )
         
         if result.returncode == 0:
-            logger.info("✅ Migraciones de Alembic completadas exitosamente.")
+            print("✅ Migraciones de Alembic completadas exitosamente.\n", flush=True)
             return
         else:
-            logger.warning(f"⚠️ Alembic retornó código {result.returncode}")
+            print(f"⚠️ Alembic retornó código {result.returncode}", flush=True)
             if result.stderr:
-                logger.warning(f"Error: {result.stderr[:500]}")
+                print(f"   Error: {result.stderr[:300]}\n", flush=True)
     
     except subprocess.TimeoutExpired:
-        logger.warning("⏱️ Timeout en Alembic (>30s), continuando...")
+        print("⏱️ Timeout en Alembic (>60s), intentando fallback...\n", flush=True)
     except Exception as e:
-        logger.warning(f"⚠️ Error al ejecutar Alembic: {type(e).__name__}: {str(e)[:200]}")
+        print(f"⚠️ Error en Alembic: {type(e).__name__}: {str(e)[:200]}\n", flush=True)
     
     # Paso 2: Fallback a SQLAlchemy create_all
-    logger.info("📝 Intento 2: Creando tablas con SQLAlchemy Base.metadata.create_all()...")
+    print("📝 Intento 2: Creando/verificando tablas con SQLAlchemy...", flush=True)
     try:
         Base.metadata.create_all(bind=engine)
-        logger.info("✅ Tablas creadas/verificadas exitosamente con SQLAlchemy.")
+        print("✅ Tablas creadas/verificadas exitosamente.\n", flush=True)
     except Exception as e:
-        logger.error(f"❌ Error al crear tablas: {type(e).__name__}: {str(e)[:200]}")
+        print(f"❌ ERROR al crear tablas: {type(e).__name__}: {str(e)[:300]}\n", flush=True)
         raise
     
-    logger.info("="*60)
-    logger.info("🚀 Base de datos lista para operación.")
-    logger.info("="*60)
+    print("="*70)
+    print("🚀 BASE DE DATOS LISTA PARA OPERACIÓN")
+    print("="*70 + "\n", flush=True)
+
+
+# Ejecutar inicialización de BD al importarse este módulo
+_init_database_sync()
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Event handler que se ejecuta al iniciar la aplicación."""
-    init_database()
+    """Event handler adicional (puede no ejecutarse si la BD ya está lista)."""
+    print("🚀 Evento startup de FastAPI ejecutado.", flush=True)
 
 
 @app.get("/", tags=["Sistema"])
