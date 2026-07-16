@@ -16,8 +16,6 @@ COPY . .
 
 RUN mkdir -p uploads
 
-RUN chmod +x runtime.sh
-
 EXPOSE 8000
 
-CMD ["bash", "runtime.sh"]
+CMD ["python", "run.py"]
